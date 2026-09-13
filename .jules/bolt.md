@@ -1,0 +1,3 @@
+## 2026-09-13 - [Precompute static node colors for faster graph loops]
+**Learning:** ComfyUI extensions often hook into frequent UI render events (like `app.graph.afterChange` or `onMenuNodeColors`) where looping over all `app.graph._nodes` can be a significant bottleneck if the inner loop does complex calculations (like converting HSL to HEX or calculating contrast shading) dynamically instead of looking them up. In Javascript, mathematical string concatenations (`rgbToHex`, `hslToHex`) and looping (`[].find(type.includes(c.key))`) are surprisingly slow when run thousands of times per interaction.
+**Action:** Always precompute any static styling, color conversions, and mapping objects during the script load rather than during UI event listeners.
