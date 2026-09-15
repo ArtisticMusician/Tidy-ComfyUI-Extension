@@ -114,16 +114,21 @@ function rainbowify(app) {
   // app.graph.change();
 }
 
+// Precompute fixed colors for uncolor
+const UNCOLOR_DEFAULT_BG = hslToHex(0, 0, 0.3);
+const UNCOLOR_DEFAULT_FG = shadeHexColor(UNCOLOR_DEFAULT_BG);
+// Note colors are computed after the `colors` object is defined below.
+let UNCOLOR_NOTE_BG = "";
+let UNCOLOR_NOTE_FG = "";
+
 function uncolor(app) {
   app.graph._nodes.forEach((node) => {
     if (node.type.toLowerCase() === "note") {
-      const [h, s, l] = colors.note;
-      const bgcolor = hslToHex(h / 360, s, l);
-      node.bgcolor = bgcolor;
-      node.color = shadeHexColor(node.bgcolor);
+      node.bgcolor = UNCOLOR_NOTE_BG;
+      node.color = UNCOLOR_NOTE_FG;
     } else {
-      node.bgcolor = hslToHex(0, 0, 0.3);
-      node.color = shadeHexColor(node.bgcolor);
+      node.bgcolor = UNCOLOR_DEFAULT_BG;
+      node.color = UNCOLOR_DEFAULT_FG;
     }
     node.setDirtyCanvas(true, true);
   });
@@ -145,15 +150,25 @@ const colors = {
   gligen: [240, 0.4, 0.3],
 };
 
+{
+  const [h, s, l] = colors.note;
+  UNCOLOR_NOTE_BG = hslToHex(h / 360, s, l);
+  UNCOLOR_NOTE_FG = shadeHexColor(UNCOLOR_NOTE_BG);
+}
+
+// Precompute hex colors for node types
+const precomputedColors = Object.entries(colors).map(([key, [h, s, l]]) => {
+  const bgcolor = hslToHex(h / 360, s, l);
+  const color = shadeHexColor(bgcolor);
+  return { key, bgcolor, color };
+});
+
 function colorNode(node) {
-  const colorRef = Object.entries(colors).find(([key]) => {
-    return node.type.toLowerCase().includes(key);
-  });
+  const nodeType = node.type.toLowerCase();
+  const colorRef = precomputedColors.find((c) => nodeType.includes(c.key));
   if (colorRef) {
-    const [h, s, l] = colorRef[1];
-    const bgcolor = hslToHex(h / 360, s, l);
-    node.bgcolor = bgcolor;
-    node.color = shadeHexColor(node.bgcolor);
+    node.bgcolor = colorRef.bgcolor;
+    node.color = colorRef.color;
   }
 }
 function colorByType(app) {
@@ -163,18 +178,22 @@ function colorByType(app) {
   });
 }
 
+const POSITIVE_BG = hslToHex(120 / 360, 0.4, 0.3);
+const POSITIVE_FG = shadeHexColor(POSITIVE_BG);
+const NEGATIVE_BG = hslToHex(0, 0.4, 0.3);
+const NEGATIVE_FG = shadeHexColor(NEGATIVE_BG);
+
 function colorPositiveNegative(app) {
   app.graph._nodes.forEach((node) => {
     // const onPropertyChanged = node.onPropertyChanged;
     // node.onPropertyChanged = function () {};
-    if (node.title.toLowerCase().includes("positive")) {
-      const bgcolor = hslToHex(120 / 360, 0.4, 0.3);
-      node.bgcolor = bgcolor;
-      node.color = shadeHexColor(node.bgcolor);
-    } else if (node.title.toLowerCase().includes("negative")) {
-      const bgcolor = hslToHex(0, 0.4, 0.3);
-      node.bgcolor = bgcolor;
-      node.color = shadeHexColor(node.bgcolor);
+    const title = node.title.toLowerCase();
+    if (title.includes("positive")) {
+      node.bgcolor = POSITIVE_BG;
+      node.color = POSITIVE_FG;
+    } else if (title.includes("negative")) {
+      node.bgcolor = NEGATIVE_BG;
+      node.color = NEGATIVE_FG;
     }
     node.setDirtyCanvas(true, true);
   });
