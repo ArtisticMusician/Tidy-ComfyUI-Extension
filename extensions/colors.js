@@ -145,15 +145,23 @@ const colors = {
   gligen: [240, 0.4, 0.3],
 };
 
+// ⚡ Bolt Performance Optimization: Precompute colors to avoid expensive
+// HSL->RGB->Hex conversions and object iteration on every node render
+const computedColors = Object.entries(colors).map(([key, [h, s, l]]) => {
+  const bgcolor = hslToHex(h / 360, s, l);
+  const color = shadeHexColor(bgcolor);
+  return { key, bgcolor, color };
+});
+
 function colorNode(node) {
-  const colorRef = Object.entries(colors).find(([key]) => {
-    return node.type.toLowerCase().includes(key);
+  if (!node.type) return;
+  const nodeType = node.type.toLowerCase();
+  const colorRef = computedColors.find(({ key }) => {
+    return nodeType.includes(key);
   });
   if (colorRef) {
-    const [h, s, l] = colorRef[1];
-    const bgcolor = hslToHex(h / 360, s, l);
-    node.bgcolor = bgcolor;
-    node.color = shadeHexColor(node.bgcolor);
+    node.bgcolor = colorRef.bgcolor;
+    node.color = colorRef.color;
   }
 }
 function colorByType(app) {
