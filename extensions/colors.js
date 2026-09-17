@@ -114,21 +114,6 @@ function rainbowify(app) {
   // app.graph.change();
 }
 
-function uncolor(app) {
-  app.graph._nodes.forEach((node) => {
-    if (node.type.toLowerCase() === "note") {
-      const [h, s, l] = colors.note;
-      const bgcolor = hslToHex(h / 360, s, l);
-      node.bgcolor = bgcolor;
-      node.color = shadeHexColor(node.bgcolor);
-    } else {
-      node.bgcolor = hslToHex(0, 0, 0.3);
-      node.color = shadeHexColor(node.bgcolor);
-    }
-    node.setDirtyCanvas(true, true);
-  });
-}
-
 const colors = {
   loader: [0, 0.4, 0.3],
   clip: [20, 0.4, 0.3],
@@ -145,15 +130,39 @@ const colors = {
   gligen: [240, 0.4, 0.3],
 };
 
-function colorNode(node) {
-  const colorRef = Object.entries(colors).find(([key]) => {
-    return node.type.toLowerCase().includes(key);
+const precomputedColors = Object.entries(colors).map(([key, [h, s, l]]) => {
+  const bgcolor = hslToHex(h / 360, s, l);
+  const color = shadeHexColor(bgcolor);
+  return { key, bgcolor, color };
+});
+
+const defaultBgColor = hslToHex(0, 0, 0.3);
+const defaultColor = shadeHexColor(defaultBgColor);
+
+const [noteH, noteS, noteL] = colors.note;
+const noteBgColor = hslToHex(noteH / 360, noteS, noteL);
+const noteColor = shadeHexColor(noteBgColor);
+
+function uncolor(app) {
+  app.graph._nodes.forEach((node) => {
+    if (node.type?.toLowerCase() === "note") {
+      node.bgcolor = noteBgColor;
+      node.color = noteColor;
+    } else {
+      node.bgcolor = defaultBgColor;
+      node.color = defaultColor;
+    }
+    node.setDirtyCanvas(true, true);
   });
+}
+
+function colorNode(node) {
+  const nodeType = node.type?.toLowerCase() || "";
+  const colorRef = precomputedColors.find((c) => nodeType.includes(c.key));
+
   if (colorRef) {
-    const [h, s, l] = colorRef[1];
-    const bgcolor = hslToHex(h / 360, s, l);
-    node.bgcolor = bgcolor;
-    node.color = shadeHexColor(node.bgcolor);
+    node.bgcolor = colorRef.bgcolor;
+    node.color = colorRef.color;
   }
 }
 function colorByType(app) {
@@ -163,18 +172,22 @@ function colorByType(app) {
   });
 }
 
+const posBgColor = hslToHex(120 / 360, 0.4, 0.3);
+const posColor = shadeHexColor(posBgColor);
+const negBgColor = hslToHex(0, 0.4, 0.3);
+const negColor = shadeHexColor(negBgColor);
+
 function colorPositiveNegative(app) {
   app.graph._nodes.forEach((node) => {
     // const onPropertyChanged = node.onPropertyChanged;
     // node.onPropertyChanged = function () {};
-    if (node.title.toLowerCase().includes("positive")) {
-      const bgcolor = hslToHex(120 / 360, 0.4, 0.3);
-      node.bgcolor = bgcolor;
-      node.color = shadeHexColor(node.bgcolor);
-    } else if (node.title.toLowerCase().includes("negative")) {
-      const bgcolor = hslToHex(0, 0.4, 0.3);
-      node.bgcolor = bgcolor;
-      node.color = shadeHexColor(node.bgcolor);
+    const title = node.title?.toLowerCase() || "";
+    if (title.includes("positive")) {
+      node.bgcolor = posBgColor;
+      node.color = posColor;
+    } else if (title.includes("negative")) {
+      node.bgcolor = negBgColor;
+      node.color = negColor;
     }
     node.setDirtyCanvas(true, true);
   });
