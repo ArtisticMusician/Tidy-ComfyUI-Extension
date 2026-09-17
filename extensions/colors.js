@@ -132,13 +132,15 @@ const colors = {
   gligen: [240, 0.4, 0.3],
 };
 
+const noteBg = hslToHex(colors.note[0] / 360, colors.note[1], colors.note[2]);
 const noteColors = {
-  bgcolor: hslToHex(colors.note[0] / 360, colors.note[1], colors.note[2]),
-  color: shadeHexColor(hslToHex(colors.note[0] / 360, colors.note[1], colors.note[2]))
+  bgcolor: noteBg,
+  color: shadeHexColor(noteBg)
 };
+const defaultUncolorBg = hslToHex(0, 0, 0.3);
 const defaultUncolors = {
-  bgcolor: hslToHex(0, 0, 0.3),
-  color: shadeHexColor(hslToHex(0, 0, 0.3))
+  bgcolor: defaultUncolorBg,
+  color: shadeHexColor(defaultUncolorBg)
 };
 
 function uncolor(app) {
@@ -178,14 +180,16 @@ function colorByType(app) {
   });
 }
 
+const positiveBg = hslToHex(120 / 360, 0.4, 0.3);
 const positiveColors = {
-  bgcolor: hslToHex(120 / 360, 0.4, 0.3),
-  color: shadeHexColor(hslToHex(120 / 360, 0.4, 0.3))
+  bgcolor: positiveBg,
+  color: shadeHexColor(positiveBg)
 };
 
+const negativeBg = hslToHex(0, 0.4, 0.3);
 const negativeColors = {
-  bgcolor: hslToHex(0, 0.4, 0.3),
-  color: shadeHexColor(hslToHex(0, 0.4, 0.3))
+  bgcolor: negativeBg,
+  color: shadeHexColor(negativeBg)
 };
 
 function colorPositiveNegative(app) {
