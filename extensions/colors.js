@@ -94,6 +94,15 @@ function getContrastColor(hexColor) {
   return L > 0.179 ? "#000000" : "#FFFFFF";
 }
 
+// ⚡ Bolt: helper to conditionally update color and mark dirty to avoid redundant canvas renders
+function updateNodeColorIfChanged(node, newBgcolor, newColor) {
+  if (node.bgcolor !== newBgcolor || node.color !== newColor) {
+    node.bgcolor = newBgcolor;
+    node.color = newColor;
+    node.setDirtyCanvas(true, true);
+  }
+}
+
 function rainbowify(app) {
   // Sort by position on canvas
   const nodes = [...app.graph._nodes].sort((a, b) => {
@@ -107,26 +116,11 @@ function rainbowify(app) {
   });
 
   nodes.forEach((node, index) => {
-    node.bgcolor = getColor(index, nodes.length, 0.3);
-    node.color = shadeHexColor(node.bgcolor);
-    node.setDirtyCanvas(true, true);
+    const bgcolor = getColor(index, nodes.length, 0.3);
+    const color = shadeHexColor(bgcolor);
+    updateNodeColorIfChanged(node, bgcolor, color);
   });
   // app.graph.change();
-}
-
-function uncolor(app) {
-  app.graph._nodes.forEach((node) => {
-    if (node.type.toLowerCase() === "note") {
-      const [h, s, l] = colors.note;
-      const bgcolor = hslToHex(h / 360, s, l);
-      node.bgcolor = bgcolor;
-      node.color = shadeHexColor(node.bgcolor);
-    } else {
-      node.bgcolor = hslToHex(0, 0, 0.3);
-      node.color = shadeHexColor(node.bgcolor);
-    }
-    node.setDirtyCanvas(true, true);
-  });
 }
 
 const colors = {
@@ -145,38 +139,62 @@ const colors = {
   gligen: [240, 0.4, 0.3],
 };
 
-function colorNode(node) {
-  const colorRef = Object.entries(colors).find(([key]) => {
-    return node.type.toLowerCase().includes(key);
+// ⚡ Bolt: Cache static colors to avoid expensive string manipulation and recalculation during dragging/rendering
+const PRECALCULATED_NOTE_BG = hslToHex(colors.note[0] / 360, colors.note[1], colors.note[2]);
+const PRECALCULATED_NOTE_COLOR = shadeHexColor(PRECALCULATED_NOTE_BG);
+const PRECALCULATED_DEFAULT_BG = hslToHex(0, 0, 0.3);
+const PRECALCULATED_DEFAULT_COLOR = shadeHexColor(PRECALCULATED_DEFAULT_BG);
+
+function uncolor(app) {
+  app.graph._nodes.forEach((node) => {
+    const nodeType = node.type?.toLowerCase() || "";
+    if (nodeType === "note") {
+      updateNodeColorIfChanged(node, PRECALCULATED_NOTE_BG, PRECALCULATED_NOTE_COLOR);
+    } else {
+      updateNodeColorIfChanged(node, PRECALCULATED_DEFAULT_BG, PRECALCULATED_DEFAULT_COLOR);
+    }
   });
+}
+
+// ⚡ Bolt: Precalculate color references and map to objects to avoid `Object.entries` inside the tight loop
+const PRECALCULATED_NODE_COLORS = Object.entries(colors).map(([key, [h, s, l]]) => {
+  const bgcolor = hslToHex(h / 360, s, l);
+  return {
+    key,
+    bgcolor,
+    color: shadeHexColor(bgcolor)
+  };
+});
+
+function colorNode(node, nodeType = node.type?.toLowerCase() || "") {
+  const colorRef = PRECALCULATED_NODE_COLORS.find((item) => nodeType.includes(item.key));
   if (colorRef) {
-    const [h, s, l] = colorRef[1];
-    const bgcolor = hslToHex(h / 360, s, l);
-    node.bgcolor = bgcolor;
-    node.color = shadeHexColor(node.bgcolor);
+    updateNodeColorIfChanged(node, colorRef.bgcolor, colorRef.color);
   }
 }
+
 function colorByType(app) {
   app.graph._nodes.forEach((node) => {
     colorNode(node);
-    node.setDirtyCanvas(true, true);
   });
 }
+
+// ⚡ Bolt: Cache positive and negative colors as well
+const PRECALCULATED_POS_BG = hslToHex(120 / 360, 0.4, 0.3);
+const PRECALCULATED_POS_COLOR = shadeHexColor(PRECALCULATED_POS_BG);
+const PRECALCULATED_NEG_BG = hslToHex(0, 0.4, 0.3);
+const PRECALCULATED_NEG_COLOR = shadeHexColor(PRECALCULATED_NEG_BG);
 
 function colorPositiveNegative(app) {
   app.graph._nodes.forEach((node) => {
     // const onPropertyChanged = node.onPropertyChanged;
     // node.onPropertyChanged = function () {};
-    if (node.title.toLowerCase().includes("positive")) {
-      const bgcolor = hslToHex(120 / 360, 0.4, 0.3);
-      node.bgcolor = bgcolor;
-      node.color = shadeHexColor(node.bgcolor);
-    } else if (node.title.toLowerCase().includes("negative")) {
-      const bgcolor = hslToHex(0, 0.4, 0.3);
-      node.bgcolor = bgcolor;
-      node.color = shadeHexColor(node.bgcolor);
+    const nodeTitle = node.title?.toLowerCase() || "";
+    if (nodeTitle.includes("positive")) {
+      updateNodeColorIfChanged(node, PRECALCULATED_POS_BG, PRECALCULATED_POS_COLOR);
+    } else if (nodeTitle.includes("negative")) {
+      updateNodeColorIfChanged(node, PRECALCULATED_NEG_BG, PRECALCULATED_NEG_COLOR);
     }
-    node.setDirtyCanvas(true, true);
   });
 }
 
