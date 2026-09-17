@@ -94,6 +94,15 @@ function getContrastColor(hexColor) {
   return L > 0.179 ? "#000000" : "#FFFFFF";
 }
 
+// ⚡ Bolt: helper to conditionally update color and mark dirty to avoid redundant canvas renders
+function updateNodeColorIfChanged(node, newBgcolor, newColor) {
+  if (node.bgcolor !== newBgcolor || node.color !== newColor) {
+    node.bgcolor = newBgcolor;
+    node.color = newColor;
+    node.setDirtyCanvas(true, true);
+  }
+}
+
 function rainbowify(app) {
   // Sort by position on canvas
   const nodes = [...app.graph._nodes].sort((a, b) => {
@@ -107,9 +116,9 @@ function rainbowify(app) {
   });
 
   nodes.forEach((node, index) => {
-    node.bgcolor = getColor(index, nodes.length, 0.3);
-    node.color = shadeHexColor(node.bgcolor);
-    node.setDirtyCanvas(true, true);
+    const bgcolor = getColor(index, nodes.length, 0.3);
+    const color = shadeHexColor(bgcolor);
+    updateNodeColorIfChanged(node, bgcolor, color);
   });
   // app.graph.change();
 }
@@ -140,13 +149,10 @@ function uncolor(app) {
   app.graph._nodes.forEach((node) => {
     const nodeType = node.type?.toLowerCase() || "";
     if (nodeType === "note") {
-      node.bgcolor = PRECALCULATED_NOTE_BG;
-      node.color = PRECALCULATED_NOTE_COLOR;
+      updateNodeColorIfChanged(node, PRECALCULATED_NOTE_BG, PRECALCULATED_NOTE_COLOR);
     } else {
-      node.bgcolor = PRECALCULATED_DEFAULT_BG;
-      node.color = PRECALCULATED_DEFAULT_COLOR;
+      updateNodeColorIfChanged(node, PRECALCULATED_DEFAULT_BG, PRECALCULATED_DEFAULT_COLOR);
     }
-    node.setDirtyCanvas(true, true);
   });
 }
 
@@ -163,15 +169,13 @@ const PRECALCULATED_NODE_COLORS = Object.entries(colors).map(([key, [h, s, l]]) 
 function colorNode(node, nodeType = node.type?.toLowerCase() || "") {
   const colorRef = PRECALCULATED_NODE_COLORS.find((item) => nodeType.includes(item.key));
   if (colorRef) {
-    node.bgcolor = colorRef.bgcolor;
-    node.color = colorRef.color;
+    updateNodeColorIfChanged(node, colorRef.bgcolor, colorRef.color);
   }
 }
 
 function colorByType(app) {
   app.graph._nodes.forEach((node) => {
     colorNode(node);
-    node.setDirtyCanvas(true, true);
   });
 }
 
@@ -187,13 +191,10 @@ function colorPositiveNegative(app) {
     // node.onPropertyChanged = function () {};
     const nodeTitle = node.title?.toLowerCase() || "";
     if (nodeTitle.includes("positive")) {
-      node.bgcolor = PRECALCULATED_POS_BG;
-      node.color = PRECALCULATED_POS_COLOR;
+      updateNodeColorIfChanged(node, PRECALCULATED_POS_BG, PRECALCULATED_POS_COLOR);
     } else if (nodeTitle.includes("negative")) {
-      node.bgcolor = PRECALCULATED_NEG_BG;
-      node.color = PRECALCULATED_NEG_COLOR;
+      updateNodeColorIfChanged(node, PRECALCULATED_NEG_BG, PRECALCULATED_NEG_COLOR);
     }
-    node.setDirtyCanvas(true, true);
   });
 }
 
