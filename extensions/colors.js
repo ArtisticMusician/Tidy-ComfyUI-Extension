@@ -114,26 +114,6 @@ function rainbowify(app) {
   // app.graph.change();
 }
 
-function uncolor(app) {
-  const [noteH, noteS, noteL] = colors.note;
-  const noteBgColor = hslToHex(noteH / 360, noteS, noteL);
-  const noteColor = shadeHexColor(noteBgColor);
-
-  const defaultBgColor = hslToHex(0, 0, 0.3);
-  const defaultColor = shadeHexColor(defaultBgColor);
-
-  app.graph._nodes.forEach((node) => {
-    if (node.type?.toLowerCase() === "note") {
-      node.bgcolor = noteBgColor;
-      node.color = noteColor;
-    } else {
-      node.bgcolor = defaultBgColor;
-      node.color = defaultColor;
-    }
-    node.setDirtyCanvas(true, true);
-  });
-}
-
 const colors = {
   loader: [0, 0.4, 0.3],
   clip: [20, 0.4, 0.3],
@@ -156,6 +136,26 @@ const precomputedColors = Object.entries(colors).map(([key, [h, s, l]]) => {
   return { key, bgcolor, color };
 });
 
+const defaultBgColor = hslToHex(0, 0, 0.3);
+const defaultColor = shadeHexColor(defaultBgColor);
+
+const [noteH, noteS, noteL] = colors.note;
+const noteBgColor = hslToHex(noteH / 360, noteS, noteL);
+const noteColor = shadeHexColor(noteBgColor);
+
+function uncolor(app) {
+  app.graph._nodes.forEach((node) => {
+    if (node.type?.toLowerCase() === "note") {
+      node.bgcolor = noteBgColor;
+      node.color = noteColor;
+    } else {
+      node.bgcolor = defaultBgColor;
+      node.color = defaultColor;
+    }
+    node.setDirtyCanvas(true, true);
+  });
+}
+
 function colorNode(node) {
   const nodeType = node.type?.toLowerCase() || "";
   const colorRef = precomputedColors.find((c) => nodeType.includes(c.key));
@@ -172,12 +172,12 @@ function colorByType(app) {
   });
 }
 
-function colorPositiveNegative(app) {
-  const posBgColor = hslToHex(120 / 360, 0.4, 0.3);
-  const posColor = shadeHexColor(posBgColor);
-  const negBgColor = hslToHex(0, 0.4, 0.3);
-  const negColor = shadeHexColor(negBgColor);
+const posBgColor = hslToHex(120 / 360, 0.4, 0.3);
+const posColor = shadeHexColor(posBgColor);
+const negBgColor = hslToHex(0, 0.4, 0.3);
+const negColor = shadeHexColor(negBgColor);
 
+function colorPositiveNegative(app) {
   app.graph._nodes.forEach((node) => {
     // const onPropertyChanged = node.onPropertyChanged;
     // node.onPropertyChanged = function () {};
