@@ -107,25 +107,33 @@ function rainbowify(app) {
   });
 
   nodes.forEach((node, index) => {
-    node.bgcolor = getColor(index, nodes.length, 0.3);
-    node.color = shadeHexColor(node.bgcolor);
-    node.setDirtyCanvas(true, true);
+    const newBgcolor = getColor(index, nodes.length, 0.3);
+    const newColor = shadeHexColor(newBgcolor);
+    if (node.bgcolor !== newBgcolor || node.color !== newColor) {
+      node.bgcolor = newBgcolor;
+      node.color = newColor;
+      node.setDirtyCanvas(true, true);
+    }
   });
   // app.graph.change();
 }
 
 function uncolor(app) {
   app.graph._nodes.forEach((node) => {
+    let newBgcolor, newColor;
     if (node.type.toLowerCase() === "note") {
       const [h, s, l] = colors.note;
-      const bgcolor = hslToHex(h / 360, s, l);
-      node.bgcolor = bgcolor;
-      node.color = shadeHexColor(node.bgcolor);
+      newBgcolor = hslToHex(h / 360, s, l);
+      newColor = shadeHexColor(newBgcolor);
     } else {
-      node.bgcolor = hslToHex(0, 0, 0.3);
-      node.color = shadeHexColor(node.bgcolor);
+      newBgcolor = hslToHex(0, 0, 0.3);
+      newColor = shadeHexColor(newBgcolor);
     }
-    node.setDirtyCanvas(true, true);
+    if (node.bgcolor !== newBgcolor || node.color !== newColor) {
+      node.bgcolor = newBgcolor;
+      node.color = newColor;
+      node.setDirtyCanvas(true, true);
+    }
   });
 }
 
@@ -151,15 +159,21 @@ function colorNode(node) {
   });
   if (colorRef) {
     const [h, s, l] = colorRef[1];
-    const bgcolor = hslToHex(h / 360, s, l);
-    node.bgcolor = bgcolor;
-    node.color = shadeHexColor(node.bgcolor);
+    const newBgcolor = hslToHex(h / 360, s, l);
+    const newColor = shadeHexColor(newBgcolor);
+    if (node.bgcolor !== newBgcolor || node.color !== newColor) {
+      node.bgcolor = newBgcolor;
+      node.color = newColor;
+      return true;
+    }
   }
+  return false;
 }
 function colorByType(app) {
   app.graph._nodes.forEach((node) => {
-    colorNode(node);
-    node.setDirtyCanvas(true, true);
+    if (colorNode(node)) {
+      node.setDirtyCanvas(true, true);
+    }
   });
 }
 
@@ -167,16 +181,20 @@ function colorPositiveNegative(app) {
   app.graph._nodes.forEach((node) => {
     // const onPropertyChanged = node.onPropertyChanged;
     // node.onPropertyChanged = function () {};
+    let newBgcolor, newColor;
     if (node.title.toLowerCase().includes("positive")) {
-      const bgcolor = hslToHex(120 / 360, 0.4, 0.3);
-      node.bgcolor = bgcolor;
-      node.color = shadeHexColor(node.bgcolor);
+      newBgcolor = hslToHex(120 / 360, 0.4, 0.3);
+      newColor = shadeHexColor(newBgcolor);
     } else if (node.title.toLowerCase().includes("negative")) {
-      const bgcolor = hslToHex(0, 0.4, 0.3);
-      node.bgcolor = bgcolor;
-      node.color = shadeHexColor(node.bgcolor);
+      newBgcolor = hslToHex(0, 0.4, 0.3);
+      newColor = shadeHexColor(newBgcolor);
     }
-    node.setDirtyCanvas(true, true);
+
+    if (newBgcolor && (node.bgcolor !== newBgcolor || node.color !== newColor)) {
+      node.bgcolor = newBgcolor;
+      node.color = newColor;
+      node.setDirtyCanvas(true, true);
+    }
   });
 }
 
@@ -219,9 +237,13 @@ function setColorMode(value, app) {
       break;
     default:
       app.graph._nodes.forEach((node) => {
-        node.bgcolor = node._bgcolor ?? node.bgcolor;
-        node.color = node._color ?? node.color;
-        node.setDirtyCanvas(true, true);
+        const newBgcolor = node._bgcolor ?? node.bgcolor;
+        const newColor = node._color ?? node.color;
+        if (node.bgcolor !== newBgcolor || node.color !== newColor) {
+          node.bgcolor = newBgcolor;
+          node.color = newColor;
+          node.setDirtyCanvas(true, true);
+        }
       });
       break;
   }
